@@ -1,13 +1,6 @@
-"""
-Simple Bot to reply to Telegram messages taken from the python-telegram-bot examples.
-Deployed using heroku.
-Author: liuhh02 https://medium.com/@liuhh02
-"""
-
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
-#telegram.error.BadRequest: Bad webhook: webhook can be set up only on ports 80, 88, 443 or 8443?
 PORT = int(os.environ.get('PORT', '8443'))
 
 # Enable logging
@@ -27,10 +20,16 @@ def start(update, context):
 
 def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    update.message.reply_text("GET HELP! PLEASE! My brother, he's dying. Get help, HELP HIM!")
+
+def getID(update, context):
+    """Send a message when the command /login is issued."""
+    update.message.reply_text("Want to play this game with better visuals and music? + \n + Download our game in the store(insert IOS and Android Store link here) and enter your unique code(insert code here) to not lose your progress!")
 
 def echo(update, context):
     """Echo the user message."""
+    if (update.message.text != None): # Should check if it is a sticker?
+        update.message.reply_text("“Words are pale shadows of forgotten names. As names have power, words have power. Words can light fires in the minds of men. Words can wring tears from the hardest hearts.” + \n + ― Patrick Rothfuss, The Name of the Wind")
     update.message.reply_text(update.message.text)
 
 def error(update, context):
@@ -50,6 +49,7 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
+    dp.add_handler(CommandHandler("getid", getID))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
@@ -59,9 +59,9 @@ def main():
 
     # Start the Bot
     updater.start_webhook(listen="0.0.0.0",
-                           port=PORT,
-                          url_path=TOKEN,
-                          webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
+        port=PORT,
+        url_path=TOKEN,
+        webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
     #updater.bot.setWebhook('https://the-paramours-candour.herokuapp.com/' + TOKEN)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
