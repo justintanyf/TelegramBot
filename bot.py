@@ -9,13 +9,15 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-# https://stackoverflow.com/questions/55776767/how-to-hide-bot-telegram-token-with-gitignore
+# the token is a variable in heroku
 TOKEN = os.environ["TOKEN"]
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """Send a message when the command /start is issued."""
+    # Ideally I would get the User ID here and send it to the database to create an account that deletes after a month
+    print(update.message.from_user)
     update.message.reply_text('Hi!')
 
 def help(update, context):
@@ -24,11 +26,12 @@ def help(update, context):
 
 def getID(update, context):
     """Send a message when the command /login is issued."""
-    update.message.reply_text("Want to play this game with better visuals and music? + \n + Download our game in the store(insert IOS and Android Store link here) and enter your unique code(insert code here) to not lose your progress!")
+    update.message.reply_text("Want to play this game with better visuals and music? \n Download our game in the store(insert IOS and Android Store link here) and enter your unique code(insert code here) to not lose your progress!")
 
 def echo(update, context):
     """Echo the user message."""
-    if (update.message.text != None): # Should check if it is a sticker?
+    update.message
+    if update.message.text != None: # Should check if it is a sticker?
         update.message.reply_text("“Words are pale shadows of forgotten names. As names have power, words have power. Words can light fires in the minds of men. Words can wring tears from the hardest hearts.” + \n + ― Patrick Rothfuss, The Name of the Wind")
     update.message.reply_text(update.message.text)
 
