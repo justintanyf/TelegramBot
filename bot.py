@@ -1,6 +1,8 @@
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 import os
+import psycopg2
+
 PORT = int(os.environ.get('PORT', '8443'))
 
 # Enable logging
@@ -18,6 +20,7 @@ def start(update, context):
     """Send a message when the command /start is issued."""
     # Ideally I would get the User ID here and send it to the database to create an account that deletes after a month
     print(update.message.from_user)
+    # Here I should use conn.open or something to add a new user
     update.message.reply_text('Hi!')
 
 def help(update, context):
@@ -31,7 +34,7 @@ def getID(update, context):
 def echo(update, context):
     """Echo the user message."""
     update.message
-    if update.message.text != None: # Should check if it is a sticker?
+    if update.message.text == None: # Should check if it is a sticker?
         update.message.reply_text("“Words are pale shadows of forgotten names. As names have power, words have power. Words can light fires in the minds of men. Words can wring tears from the hardest hearts.” + \n + ― Patrick Rothfuss, The Name of the Wind")
     update.message.reply_text(update.message.text)
 
@@ -65,7 +68,10 @@ def main():
         port=PORT,
         url_path=TOKEN,
         webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
-    #updater.bot.setWebhook('https://the-paramours-candour.herokuapp.com/' + TOKEN)
+    
+    # Supposedly code to connect to database
+    DATABASE_URL = os.environ['DATABASE_URL']
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
