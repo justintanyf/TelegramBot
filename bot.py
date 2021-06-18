@@ -22,19 +22,21 @@ def start(update, context):
     # Ideally I would get the Chat ID here and send it to the database and assign it to a new account
     # This enables us to start a conversation without prompting
     chatID = getChatID(update, context)
-    print(chatID)
     timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(timeNow)
-    # Supposedly code to connect to database
     DATABASE_URL = os.environ['DATABASE_URL']
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
-    cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
+    # Check if value already exists
+    cur.execute("select exists(select 1 from users where chat_id=230845964);")
+    if (cur.fetchone()[0]):
+            update.message.reply_text('You already have an account!')
+    else:
+        cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
         (timeNow, chatID))
-    conn.commit()
+        conn.commit()
+        update.message.reply_text('Begin your journey through the KingKiller chronicles')
     cur.close()
     conn.close()
-    update.message.reply_text('Begin your journey through the KingKiller chronicles')
 
 def help(update, context):
     """Send a message when the command /help is issued."""
