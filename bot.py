@@ -1,5 +1,6 @@
 import logging
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+from datetime import datetime
 import os
 import psycopg2
 
@@ -18,10 +19,22 @@ TOKEN = os.environ["TOKEN"]
 # context. Error handlers also receive the raised TelegramError object in error.
 def start(update, context):
     """Send a message when the command /start is issued."""
-    # Ideally I would get the User ID here and send it to the database to create an account that deletes after a month
-    print(update.message.from_user)
-    # Here I should use conn.open or something to add a new user
-    update.message.reply_text('Hi!')
+    # Ideally I would get the Chat ID here and send it to the database and assign it to a new account
+    # This enables us to start a conversation without prompting
+    chatID = getChatID(update, context)
+    print(chatID)
+    timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(timeNow)
+    # Supposedly code to connect to database
+    DATABASE_URL = os.environ['DATABASE_URL']
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()
+    cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
+        (timeNow, chatID))
+    conn.commit()
+    cur.close()
+    conn.close()
+    update.message.reply_text('Begin your journey through the KingKiller chronicles')
 
 def help(update, context):
     """Send a message when the command /help is issued."""
@@ -41,6 +54,19 @@ def echo(update, context):
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
+# The JSON can be in different formats, so this ensures we get the right chat_id everytime
+def getChatID(update, context):
+    chat_id = -1
+
+    if update.message is not None:
+        chat_id = update.message.chat.id
+    elif update.callback_query is not None:
+        chat_id = update.callback_query.message.chat.id
+    elif update.poll is not None:
+        chat_id = context.bot_data[update.poll.id]
+
+    return chat_id
 
 def main():
     """Start the bot."""
@@ -64,14 +90,11 @@ def main():
     dp.add_error_handler(error)
 
     # Start the Bot
+    # Webhooks lower our server usage compared to long polling
     updater.start_webhook(listen="0.0.0.0",
         port=PORT,
         url_path=TOKEN,
         webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
-    
-    # Supposedly code to connect to database
-    DATABASE_URL = os.environ['DATABASE_URL']
-    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since

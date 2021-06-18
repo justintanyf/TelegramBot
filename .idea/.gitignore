@@ -1,3 +1,17 @@
 # Default ignored files
 /shelf/
 /workspace.xml
+
+# User-specific stuff:
+.idea/misc.xml
+.idea/modules.xml
+.idea/the-paramours-candour.iml
+.idea/vcs.xml
+.idea/workspace.xml
+
+# vsCode specific
+.vsCode/launch.json
+.vsCode/settings.json
+
+# Local code
+.botLocal.py
