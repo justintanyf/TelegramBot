@@ -25,22 +25,18 @@ def start(update, context):
     # Ideally I would get the Chat ID here and send it to the database and assign it to a new account
     # This enables us to start a conversation without prompting
     chatID = getChatID(update, context)
-    print(chatID)
-    timeNow = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(timeNow)
-    # Here I should use conn.open or something to add a new user
-    update.message.reply_text('Hi!')
-    context.bot.sendMessage(chatID, "Sending unprompted")
+    timeNow = datetime.datetime.now()
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     # Check if value already exists
     cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE chat_id=" + str(chatID) + ");")
     if cur.fetchone()[0]:
-        context.bot.sendMessage(chatID, "You already have an account!")
+        update.message.reply_text('You already have an account!')
     else:
         cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
                     (timeNow, chatID))
-    conn.commit()
+        conn.commit()
+        update.message.reply_text('Begin your journey through the KingKiller chronicles')
     cur.close()
     conn.close()
 
@@ -67,7 +63,7 @@ def getOTP(update, context):
     if cur.fetchone()[0]:  # Account exists, so just add the OTP and expiry
         cur.execute("UPDATE users "
                     "SET otp = %s, otp_expiry = %s "
-                    "WHERE chat_id=" + str(chatID) + ";",
+                    "WHERE chat_id=" + str(chatID),
                     (OTP, OTPExpiry))
     else:  # Account does not exist, so create one with the OTP
         cur.execute("INSERT INTO users (created_on, chat_id, otp, otp_expiry) "
@@ -77,8 +73,9 @@ def getOTP(update, context):
     cur.close()
     conn.close()
     update.message.reply_text(
-        "Want to play this game with better visuals and music? \n Download our game in the store(insert IOS and "
-        "Android Store link here) and enter your unique code(", OTP, ") at the sign up page to not lose your progress!")
+        "Want to play this game with better visuals and music? \nDownload our game in the store(insert IOS and "
+        "Android Store link here) and enter your unique code at the sign up page to not lose your progress!")
+    context.bot.sendMessage(chatID, "*OTP: "+str(OTP)+"*", parse_mode='Markdown')
 
 
 def echo(update, context):
