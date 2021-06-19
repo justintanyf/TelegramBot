@@ -1,6 +1,7 @@
 import logging
+import secrets
 from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
-from datetime import datetime
+import datetime
 import os
 import psycopg2
 
@@ -12,8 +13,10 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-# the token is a variable in heroku
+# the token and database_url is a variable in heroku
 TOKEN = os.environ["TOKEN"]
+DATABASE_URL = os.environ['DATABASE_URL']
+
 
 # Define a few command handlers. These usually take the two arguments update and
 # context. Error handlers also receive the raised TelegramError object in error.
@@ -22,40 +25,76 @@ def start(update, context):
     # Ideally I would get the Chat ID here and send it to the database and assign it to a new account
     # This enables us to start a conversation without prompting
     chatID = getChatID(update, context)
-    timeNow = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    DATABASE_URL = os.environ['DATABASE_URL']
+    print(chatID)
+    timeNow = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(timeNow)
+    # Here I should use conn.open or something to add a new user
+    update.message.reply_text('Hi!')
+    context.bot.sendMessage(chatID, "Sending unprompted")
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     cur = conn.cursor()
     # Check if value already exists
-    cur.execute("select exists(select 1 from users where chat_id=230845964);")
-    if (cur.fetchone()[0]):
-            update.message.reply_text('You already have an account!')
+    cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE chat_id=" + str(chatID) + ");")
+    if cur.fetchone()[0]:
+        context.bot.sendMessage(chatID, "You already have an account!")
     else:
         cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
-        (timeNow, chatID))
-        conn.commit()
-        update.message.reply_text('Begin your journey through the KingKiller chronicles')
+                    (timeNow, chatID))
+    conn.commit()
     cur.close()
     conn.close()
 
+
 def help(update, context):
     """Send a message when the command /help is issued."""
-    update.message.reply_text("GET HELP! PLEASE! My brother, he's dying. Get help, HELP HIM!")
+    update.message.reply_text("The Paramour's Candour is a text-based RPG based on the Kingkiller chronicles by "
+                              "Patrick Rothfuss. This bot aims to give you a taste of the game and what it has to "
+                              "offer, but for more immersive gameplay, please install the game (INSERT LINK)!")
 
-def getID(update, context):
-    """Send a message when the command /login is issued."""
-    update.message.reply_text("Want to play this game with better visuals and music? \n Download our game in the store(insert IOS and Android Store link here) and enter your unique code(insert code here) to not lose your progress!")
+
+def getOTP(update, context):
+    """Send a message when the command /get_otp is issued."""
+    # Generate OTP here and send back to user
+    chatID = getChatID(update, context)
+    timeNow = datetime.datetime.now()
+    aWeekDifference = datetime.timedelta(weeks=1)
+    OTPExpiry = timeNow + aWeekDifference
+    randomNumber = hash(secrets.token_bytes(8))
+    OTP = abs(int(str(randomNumber)[:5]))
+    conn = psycopg2.connect(DATABASE_URL, sslmode='require')
+    cur = conn.cursor()
+    cur.execute("SELECT EXISTS(SELECT 1 FROM users WHERE chat_id=" + str(chatID) + ");")
+    if cur.fetchone()[0]:  # Account exists, so just add the OTP and expiry
+        cur.execute("UPDATE users "
+                    "SET otp = %s, otp_expiry = %s "
+                    "WHERE chat_id=" + str(chatID) + ";",
+                    (OTP, OTPExpiry))
+    else:  # Account does not exist, so create one with the OTP
+        cur.execute("INSERT INTO users (created_on, chat_id, otp, otp_expiry) "
+                    "VALUES (%s, %s, %s, %s)",
+                    (timeNow, chatID, OTP, OTPExpiry))
+    conn.commit()
+    cur.close()
+    conn.close()
+    update.message.reply_text(
+        "Want to play this game with better visuals and music? \n Download our game in the store(insert IOS and "
+        "Android Store link here) and enter your unique code(", OTP, ") at the sign up page to not lose your progress!")
+
 
 def echo(update, context):
     """Echo the user message."""
-    update.message
-    if update.message.text == None: # Should check if it is a sticker?
-        update.message.reply_text("“Words are pale shadows of forgotten names. As names have power, words have power. Words can light fires in the minds of men. Words can wring tears from the hardest hearts.” + \n + ― Patrick Rothfuss, The Name of the Wind")
+    if update.message.text is None:  # Should check if it is a sticker?
+        update.message.reply_text(
+            "“Words are pale shadows of forgotten names. As names have power, words have power. Words can light fires "
+            "in the minds of men. Words can wring tears from the hardest hearts.” + \n + ― Patrick Rothfuss, "
+            "The Name of the Wind")
     update.message.reply_text(update.message.text)
+
 
 def error(update, context):
     """Log Errors caused by Updates."""
     logger.warning('Update "%s" caused error "%s"', update, context.error)
+
 
 # The JSON can be in different formats, so this ensures we get the right chat_id everytime
 def getChatID(update, context):
@@ -70,6 +109,7 @@ def getChatID(update, context):
 
     return chat_id
 
+
 def main():
     """Start the bot."""
     # Create the Updater and pass it your bot's token.
@@ -83,7 +123,7 @@ def main():
     # on different commands - answer in Telegram
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
-    dp.add_handler(CommandHandler("getid", getID))
+    dp.add_handler(CommandHandler("get_otp", getOTP))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
@@ -94,14 +134,15 @@ def main():
     # Start the Bot
     # Webhooks lower our server usage compared to long polling
     updater.start_webhook(listen="0.0.0.0",
-        port=PORT,
-        url_path=TOKEN,
-        webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
+                          port=PORT,
+                          url_path=TOKEN,
+                          webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
     # start_polling() is non-blocking and will stop the bot gracefully.
     updater.idle()
+
 
 if __name__ == '__main__':
     main()
