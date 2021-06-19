@@ -35,6 +35,12 @@ def start(update, context):
     else:
         cur.execute("INSERT INTO users (created_on, chat_id) VALUES (%s, %s)",
                     (timeNow, chatID))
+        # Bind to new row in skillstemp
+        cur.execute("SELECT user_id from users where chat_id=" + str(chatID) + ";")
+        user_id = cur.fetchone()[0]
+        cur.execute("INSERT INTO skillstemp (user_id, t1s1, t1s2, t2s1, t2s2, t2s3, t2s4, t3s1) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (user_id, 0, 0, 0, 0, 0, 0, 0))
         conn.commit()
         update.message.reply_text('Begin your journey through the KingKiller chronicles')
     cur.close()
@@ -69,6 +75,12 @@ def getOTP(update, context):
         cur.execute("INSERT INTO users (created_on, chat_id, otp, otp_expiry) "
                     "VALUES (%s, %s, %s, %s)",
                     (timeNow, chatID, OTP, OTPExpiry))
+        # Bind to new row in skillstemp
+        cur.execute("SELECT user_id from users where chat_id=" + str(chatID) + ";")
+        user_id = cur.fetchone()[0]
+        cur.execute("INSERT INTO skillstemp (user_id, t1s1, t1s2, t2s1, t2s2, t2s3, t2s4, t3s1) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+                    (user_id, 0, 0, 0, 0, 0, 0, 0))
     conn.commit()
     cur.close()
     conn.close()
