@@ -1,6 +1,8 @@
 import logging
 import secrets
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
+
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackQueryHandler
 import datetime
 import os
 import psycopg2
@@ -15,7 +17,9 @@ logger = logging.getLogger(__name__)
 
 # the token and database_url is a variable in heroku
 TOKEN = os.environ["TOKEN"]
-DATABASE_URL = os.environ['DATABASE_URL']
+DATABASE_URL = os.environ["DATABASE_URL"]
+
+listOfCharacters = ["Kvothe", "Auri", "Fire Sprite", "Fire Horse", "Apollo", "Amphitrite"]
 
 
 # Define a few command handlers. These usually take the two arguments update and
@@ -42,7 +46,7 @@ def start(update, context):
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
                     (user_id, 0, 0, 0, 0, 0, 0, 0))
         conn.commit()
-        update.message.reply_text('Begin your journey through the KingKiller chronicles')
+        update.message.reply_text('We have registered you!. Begin your journey through the KingKiller chronicles')
     cur.close()
     conn.close()
 
@@ -87,7 +91,79 @@ def getOTP(update, context):
     update.message.reply_text(
         "Want to play this game with better visuals and music? \nDownload our game in the store(insert IOS and "
         "Android Store link here) and enter your unique code at the sign up page to not lose your progress!")
-    context.bot.sendMessage(chatID, "*OTP: "+str(OTP)+"*", parse_mode='Markdown')
+    context.bot.sendMessage(chatID, "*OTP: " + str(OTP) + "*", parse_mode='Markdown')
+
+
+def lore(update, context) -> None:
+    update.message.reply_text("Generating Lore Options")
+    keyboard = [
+        GenerateInLineKeyboardButton()
+    ]
+
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    update.message.reply_text("Please select from the bottom few", reply_markup=reply_markup)
+
+
+def GenerateInLineKeyboardButton():
+    listToBeReturned = []
+    for el in listOfCharacters:
+        listToBeReturned.append(InlineKeyboardButton(el, callback_data=el))
+    return listToBeReturned
+
+
+def button(update, context) -> None:
+    chatID = getChatID(update, context)
+    query = update.callback_query
+    query.answer()
+
+    # This will define which button the user tapped on (from what you assigned to "callback_data". As I assigned them
+    # "1" and "2"):
+    choice = query.data
+    listOfCharacters = ["Kvothe", "Auri", "Fire Sprite", "Fire Horse", "Apollo", "Amphitrite"]
+
+    # Now u can define what choice ("callback_data") do what like this:
+    if choice == 'Kvothe':
+        # update.message.reply_text("Replying to text")
+        context.bot.sendMessage(chatID, "Kvothe is the main character in the Kingkiller Chronicle. His name is "
+                                        "pronounced kəˈvōTH, much like the word quoth but beginning the same as the "
+                                        "Yiddish term \"Kvetch.\"", parse_mode='Markdown')
+
+    if choice == 'Auri':
+        context.bot.sendMessage(chatID, "Auri is a young woman described as appearing a few years older than Kvothe, "
+                                        "with blonde hair and a delicate, petite frame. Her hair is long and thin, "
+                                        "causing it to float around her head like a halo. She often displays very "
+                                        "proper manners and conducts herself with a gentle and careful air. Although "
+                                        "she lives in a rather dangerous environment and sometimes displays extremely "
+                                        "eccentric behavior, she is very intelligent and quite capable of taking care "
+                                        "of herself. She also is shown to be skilled in alchemy and possibly naming. \n"
+
+                                        "Elodin tells Kvothe that he has known about Auri for years. This along with "
+                                        "her young appearance would mean she was inducted in the University at a very "
+                                        "young age. This also implies she may be older than she appears. \n"
+
+                                        "The name Auri is similar to \"aureum\", which means \"gold\" or \"golden\" "
+                                        "in Latin. This may be related to her blonde hair. It may also be related to "
+                                        "the Quenya Elvish word for \"sunlight\" which is \"árë\" as Kvothe bases "
+                                        "this name on her \"sunny disposition,\" which in turn is based off the "
+                                        "Hebrew word for \"light\" אוֹר (ohr) or finnish word ,aurinko\" (sun). ",
+                                parse_mode='Markdown')
+    if choice == 'Fire Sprite':
+        context.bot.sendMessage(chatID, "A lowly spark of fae magic embodying a sprite.", parse_mode='Markdown')
+    if choice == 'Fire Horse':
+        context.bot.sendMessage(chatID, "It is said that the greatest horses incarnate into this form, where they "
+                                        "gallop about leaving fiery prints behind.", parse_mode='Markdown')
+    if choice == 'Apollo':
+        context.bot.sendMessage(chatID, "The elemental that governs over all fire faes. He used to represent the "
+                                        "sun but was warped by Auri's naming and now his once controlled flames "
+                                        "burn uncontrollably, stuck in a unstable cycle of combustion."
+                                , parse_mode='Markdown')
+    if choice == 'Amphitrite':
+        context.bot.sendMessage(chatID,
+                                "The elemental that governs over all water faes. She is mysterious and used to "
+                                "represent the Ocean, a careful balance of the calm shores and the "
+                                "dangerous depths. Warped by Auri's naming, she lashes out madly, hoping to drag "
+                                "them into the crushing silence of the depths. "
+                                , parse_mode='Markdown')
 
 
 def echo(update, context):
@@ -133,6 +209,7 @@ def main():
     dp.add_handler(CommandHandler("start", start))
     dp.add_handler(CommandHandler("help", help))
     dp.add_handler(CommandHandler("get_otp", getOTP))
+    dp.add_handler(CommandHandler("lore", lore))
 
     # on noncommand i.e message - echo the message on Telegram
     dp.add_handler(MessageHandler(Filters.text, echo))
@@ -146,6 +223,9 @@ def main():
                           port=PORT,
                           url_path=TOKEN,
                           webhook_url="https://the-paramours-candour.herokuapp.com/" + TOKEN)
+
+    updater.dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, lore))
+    updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
     # Run the bot until you press Ctrl-C or the process receives SIGINT,
     # SIGTERM or SIGABRT. This should be used most of the time, since
