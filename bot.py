@@ -47,6 +47,10 @@ def start(update, context):
                     (user_id, 0, 0, 0, 0, 0, 0, 0))
         conn.commit()
         update.message.reply_text('We have registered you!. Begin your journey through the KingKiller chronicles')
+    update.message.reply_text('As night fell, the Archives lay in silence, and it was a silence of three parts. The '
+                              'most obvious part was a hollow, echoing quiet, made by things that were lacking. If '
+                              'there had been a wind, it would have whispered through the shelves, rustling the pages '
+                              'of open books...')
     cur.close()
     conn.close()
 
